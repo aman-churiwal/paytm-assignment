@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Shortener</title>
+    <meta name="description" content="Shorten long URLs into compact, shareable short links">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-card: rgba(255, 255, 255, 0.04);
+            --border-card: rgba(255, 255, 255, 0.08);
+            --text-primary: #e8e8ed;
+            --text-secondary: #8a8a9a;
+            --accent: #6c5ce7;
+            --accent-glow: rgba(108, 92, 231, 0.3);
+            --accent-hover: #7c6ef7;
+            --success: #00d2a0;
+            --error: #ff6b6b;
+            --radius: 16px;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            overflow: hidden;
+        }
+
+        /* Animated background orbs */
+        body::before, body::after {
+            content: '';
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.15;
+            z-index: -1;
+            animation: float 20s ease-in-out infinite;
+        }
+        body::before {
+            width: 600px; height: 600px;
+            background: var(--accent);
+            top: -200px; left: -100px;
+        }
+        body::after {
+            width: 500px; height: 500px;
+            background: #e84393;
+            bottom: -200px; right: -100px;
+            animation-delay: -10s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -30px) scale(1.05); }
+            66% { transform: translate(-20px, 20px) scale(0.95); }
+        }
+
+        .container {
+            width: 100%;
+            max-width: 560px;
+            animation: fadeUp 0.6s ease-out;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(24px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 8px;
+            letter-spacing: -0.02em;
+        }
+        h1 span { color: var(--accent); }
+
+        .subtitle {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: 32px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: var(--radius);
+            padding: 32px;
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        input::placeholder { color: rgba(255, 255, 255, 0.2); }
+        input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        button#shorten-btn {
+            width: 100%;
+            padding: 14px;
+            margin-top: 8px;
+            background: var(--accent);
+            color: #fff;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+        }
+        button#shorten-btn:hover {
+            background: var(--accent-hover);
+            box-shadow: 0 4px 24px var(--accent-glow);
+        }
+        button#shorten-btn:active { transform: scale(0.98); }
+        button#shorten-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Result */
+        .result {
+            margin-top: 24px;
+            padding: 20px;
+            background: rgba(0, 210, 160, 0.06);
+            border: 1px solid rgba(0, 210, 160, 0.15);
+            border-radius: 12px;
+            display: none;
+            animation: fadeUp 0.4s ease-out;
+        }
+        .result.visible { display: block; }
+
+        .result-label {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--success);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 10px;
+        }
+
+        .result-url-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .result-url {
+            flex: 1;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            word-break: break-all;
+        }
+        .result-url a {
+            color: var(--text-primary);
+            text-decoration: none;
+            border-bottom: 1px dashed rgba(255,255,255,0.2);
+            transition: border-color 0.2s;
+        }
+        .result-url a:hover { border-color: var(--accent); }
+
+        button.copy-btn {
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.08);
+            color: var(--text-secondary);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        button.copy-btn:hover { background: rgba(255,255,255,0.12); color: var(--text-primary); }
+        button.copy-btn.copied { background: rgba(0,210,160,0.15); color: var(--success); border-color: rgba(0,210,160,0.3); }
+
+        /* Error */
+        .error-msg {
+            margin-top: 16px;
+            padding: 14px 16px;
+            background: rgba(255, 107, 107, 0.08);
+            border: 1px solid rgba(255, 107, 107, 0.2);
+            border-radius: 10px;
+            color: var(--error);
+            font-size: 0.9rem;
+            display: none;
+            animation: fadeUp 0.3s ease-out;
+        }
+        .error-msg.visible { display: block; }
+
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><span>&#9889;</span> URL Shortener</h1>
+        <p class="subtitle">Turn long URLs into compact, shareable links</p>
+
+        <div class="card">
+            <div class="input-group">
+                <label for="url-input">Paste your long URL</label>
+                <input type="url" id="url-input" placeholder="https://example.com/very/long/path..." autofocus>
+            </div>
+            <div class="input-group">
+                <label for="alias-input">Custom alias <span style="opacity:0.5">(optional)</span></label>
+                <input type="text" id="alias-input" placeholder="my-custom-link">
+            </div>
+            <button id="shorten-btn">Shorten URL</button>
+
+            <div class="error-msg" id="error-msg"></div>
+
+            <div class="result" id="result">
+                <div class="result-label">Your short link</div>
+                <div class="result-url-row">
+                    <div class="result-url"><a id="short-url" href="#" target="_blank"></a></div>
+                    <button class="copy-btn" id="copy-btn">Copy</button>
+                </div>
+            </div>
+        </div>
+
+        <p class="footer">Paste a URL, get a short link. It's that simple.</p>
+    </div>
+
+    <script>
+        const urlInput    = document.getElementById('url-input');
+        const aliasInput  = document.getElementById('alias-input');
+        const shortenBtn  = document.getElementById('shorten-btn');
+        const resultEl    = document.getElementById('result');
+        const shortUrlEl  = document.getElementById('short-url');
+        const copyBtn     = document.getElementById('copy-btn');
+        const errorEl     = document.getElementById('error-msg');
+
+        function showError(msg) {
+            resultEl.classList.remove('visible');
+            errorEl.textContent = msg;
+            errorEl.classList.add('visible');
+        }
+
+        function hideError() {
+            errorEl.classList.remove('visible');
+        }
+
+        async function shorten() {
+            hideError();
+            const url = urlInput.value.trim();
+            if (!url) { showError('Please enter a URL.'); return; }
+
+            shortenBtn.disabled = true;
+            shortenBtn.textContent = 'Shortening...';
+
+            try {
+                const body = { url };
+                const alias = aliasInput.value.trim();
+                if (alias) body.custom_alias = alias;
+
+                const res = await fetch('/shorten', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    showError(data.error || 'Something went wrong.');
+                    return;
+                }
+
+                shortUrlEl.textContent = data.short_url;
+                shortUrlEl.href = data.short_url;
+                resultEl.classList.add('visible');
+                copyBtn.textContent = 'Copy';
+                copyBtn.classList.remove('copied');
+            } catch (err) {
+                showError('Network error. Is the server running?');
+            } finally {
+                shortenBtn.disabled = false;
+                shortenBtn.textContent = 'Shorten URL';
+            }
+        }
+
+        shortenBtn.addEventListener('click', shorten);
+        urlInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') shorten(); });
+
+        copyBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(shortUrlEl.textContent).then(() => {
+                copyBtn.textContent = 'Copied!';
+                copyBtn.classList.add('copied');
+                setTimeout(() => { copyBtn.textContent = 'Copy'; copyBtn.classList.remove('copied'); }, 2000);
+            });
+        });
+    </script>
+</body>
+</html>
