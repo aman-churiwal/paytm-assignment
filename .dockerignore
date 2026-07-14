@@ -1,0 +1,11 @@
+.git
+.gitignore
+.idea
+.agent
+.superpowers
+docs
+README.md
+*.md
+*.exe
+*.test
+server
