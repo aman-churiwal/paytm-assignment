@@ -29,13 +29,13 @@ func ValidateURL(rawURL string) error {
 	}
 	u, err := url.ParseRequestURI(rawURL)
 	if err != nil {
-		return fmt.Errorf("invalid url: %w", err)
+		return fmt.Errorf("Invalid url. Url should start from http or https")
 	}
 	if u.Scheme != "http" && u.Scheme != "https" {
-		return fmt.Errorf("url must have http or https scheme")
+		return fmt.Errorf("Invalid url. Url should start from http or https")
 	}
 	if u.Host == "" {
-		return fmt.Errorf("url must have a valid host")
+		return fmt.Errorf("Invalid url. Url should start from http or https")
 	}
 	return nil
 }

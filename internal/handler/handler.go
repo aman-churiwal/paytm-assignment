@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	"url-shortener/internal/model"
@@ -45,7 +46,7 @@ func (h *Handler) Shorten(c *gin.Context) {
 		}
 		u, err = h.repo.CreateURLWithAlias(req.URL, req.CustomAlias)
 		if errors.Is(err, repository.ErrAliasConflict) {
-			c.JSON(http.StatusConflict, gin.H{"error": "custom alias already taken by a different URL"})
+			c.JSON(http.StatusConflict, gin.H{"error": fmt.Sprintf("Custom alias '%s' already taken by a different URL. Choose another custom alias", req.CustomAlias)})
 			return
 		}
 	} else {
